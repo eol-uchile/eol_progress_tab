@@ -1,0 +1,80 @@
+## mako
+<%! from django.utils.translation import ugettext as _ %>
+<%namespace name='static' file='/static_content.html'/>
+<%block name="bodyclass">view-in-course</%block>
+<%block name="pagetitle">Progress Tab</%block>
+<%inherit file="/main.html" />
+<%block name="headextra">
+<%static:css group='style-course'/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+</%block>
+<%include file="/courseware/course_navigation.html" args="active_page='eol_progress_tab'" />
+
+<% from lms.djangoapps.courseware.courses import get_studio_url %>
+
+<style>
+    html {
+        /* Modal scroll */
+        scroll-behavior: smooth; 
+    }
+    .content-wrapper {
+        padding: 0px;
+    }
+    .window-wrap {
+        margin-top: -20px;
+    }
+    .wrapper-course-material .course-tabs {
+        padding: 0 20px 10px;
+    }
+    #main div {
+        display:block;
+        border: none;
+        box-shadow: none;
+    }
+    #main .row {
+        display: flex;
+    }
+    #main {
+        border: 1px solid #c8c8c8;
+        margin: -11px 20px 10px;
+        padding: 1em 0;
+    }
+
+</style>
+
+<main id="main" aria-label="Content" tabindex="-1">
+    % if DEV_URL is None:
+        <iframe 
+            id="reactIframe" 
+            width="100%" 
+            frameborder="0" 
+            allowfullscreen="" 
+            scrolling="yes" 
+            src="${static.url('eol_progress_tab/index.html')}#/eol/eol_progress_tab/static/${course.id}"
+        ></iframe>
+    % else :
+        <iframe 
+            id="reactIframe" 
+            width="100%" 
+            frameborder="0" 
+            allowfullscreen="" 
+            scrolling="yes" 
+            src="${DEV_URL}#/eol/eol_progress_tab/static/${course.id}"
+        ></iframe>
+    % endif 
+</main>
+
+<script>
+    $(function() {
+        const MIN_HEIGHT = 600;
+        function receiveMessage(event) {
+            var { type, payload } = event.data;
+            if (type === 'plugin.resize') {
+                document.getElementById( 'reactIframe' ).height = Math.max(payload.height + 20, MIN_HEIGHT);
+            } 
+        }
+        // Now add our new receiveMessage handler as the event listener.
+        global.addEventListener('message', receiveMessage);
+    });
+
+</script>
