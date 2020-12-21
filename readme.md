@@ -18,6 +18,13 @@ Set React app url:
 
     EOL_PROGRESS_TAB_DEV_URL = '/eol/eol_progress_tab/static'
 
+## Compile frontend (production)
+
+    > cd frontend
+    > docker build -t frontend .
+    > docker run -v $(pwd)/dist:/app/dist frontend npm run-script build
+    > rm ../eol_progress_tab/static/eol_progress_tab/*
+    > cp -r dist/* ../eol_progress_tab/static/eol_progress_tab/
 
 ## TESTS
 **Prepare tests:**
