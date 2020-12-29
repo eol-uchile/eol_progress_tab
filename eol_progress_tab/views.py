@@ -4,7 +4,13 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from django.conf import settings
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.courses import get_course_about_section
+
+# https://github.com/edx/edx-platform/blob/open-release/juniper.master/lms/djangoapps/courseware/views/views.py
+from lms.djangoapps.courseware.views.views import _get_cert_data as get_cert_data 
+from lms.djangoapps.certificates.models import CertificateStatuses
+
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
+from student.models import CourseEnrollment
 
 from django.template.loader import render_to_string
 from web_fragments.fragment import Fragment
@@ -13,10 +19,11 @@ from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from opaque_keys.edx.keys import CourseKey
 from django.contrib.auth.models import User
 from django.http import Http404, HttpResponse
+from django.urls import reverse
 
 import json
 from bson import json_util
-from six import string_types, itervalues
+from six import string_types, itervalues, text_type
 
 import logging
 logger = logging.getLogger(__name__)
@@ -56,6 +63,11 @@ def get_student_data(request, course_id):
     }
     # Student grades information
     course_grade = CourseGradeFactory().read(request.user, course)
+
+    # Certificate
+    enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(request.user, course_key)
+    certificate_data = _get_certificate_data(request.user, course, enrollment_mode, course_grade)
+
     # Student final grade scaled
     student_grade_scaled = _grade_percent_scaled(course_grade.percent, grade_cutoff)
     # Category average grades
@@ -66,6 +78,7 @@ def get_student_data(request, course_id):
         'final_grade_percent'   : course_grade.percent,
         'final_grade_scaled'    : student_grade_scaled,
         'passed'                : course_grade.passed,
+        'certificate_data'      : certificate_data,
         'category_grades'       : [
             {
                 'grade_percent' : grade['percent'],
@@ -123,6 +136,36 @@ def _has_page_access(request, course_id):
         courseenrollment__is_active=1,
         pk = request.user.id
     ).exists()
+
+def _get_certificate_data(user, course, enrollment_mode, course_grade):
+    """
+        Get student certificate url and messages.
+    """
+    certificate_data = get_cert_data(user, course, enrollment_mode, course_grade)
+    if certificate_data:
+        request_method = "GET"
+        if certificate_data.cert_web_view_url:
+            url = certificate_data.cert_web_view_url
+            button_msg = "Ver Certificado"
+        elif certificate_data.cert_status == CertificateStatuses.downloadable and certificate_data.download_url:
+            url = certificate_data.download_url
+            button_msg = "Descargar Certificado"
+        elif certificate_data.cert_status == CertificateStatuses.requesting:
+            url = reverse('generate_user_cert', args=[text_type(course.id)])
+            button_msg = "Solicitar Certificado"
+            request_method = "POST"
+        else:
+            url = "#"
+            button_msg = "Certificado No Disponible"
+        return {
+            'url'           : url,
+            'title'         : text_type(certificate_data.title),
+            'msg'           : text_type(certificate_data.msg),
+            'button_msg'    : button_msg,
+            'button_method' : request_method
+        }
+    else:
+        return { }
 
 def _prominent_section_filter(elem):
     """
