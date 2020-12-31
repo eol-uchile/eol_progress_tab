@@ -47,7 +47,7 @@ class EolProgressTabFragmentView(EdxFragmentView):
 def get_student_data(request, course_id):
     """
         Get student grades in two formats: percents and scaled (1. -> 7.)
-        List of categories with respective weight and grades
+        List of categories with respective weight, grades & problem scores.
     """
     if(not _has_page_access(request, course_id)):
         raise Http404()
@@ -63,6 +63,9 @@ def get_student_data(request, course_id):
     }
     # Student grades information
     course_grade = CourseGradeFactory().read(request.user, course)
+
+    # Get category detail and problem scores by subsection
+    category_scores_detail = _get_category_scores_detail(course_grade, course_key)
 
     # Certificate
     enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(request.user, course_key)
@@ -84,7 +87,8 @@ def get_student_data(request, course_id):
                 'grade_percent' : grade['percent'],
                 'grade_scaled'  : _grade_percent_scaled(grade['percent'], grade_cutoff),
                 'category'      : grade['category'].title(),
-                'weight'        : category_weights[grade['category'].upper()]
+                'weight'        : category_weights[grade['category'].upper()],
+                'detail'        : category_scores_detail[grade['category'].upper()]
             }
             for grade in student_category_grades
         ]
@@ -136,6 +140,46 @@ def _has_page_access(request, course_id):
         courseenrollment__is_active=1,
         pk = request.user.id
     ).exists()
+
+def _get_category_scores_detail(course_grade, course_key):
+    """
+        Get subsections by category_grade with their respective problem scores
+    """
+    graded_subsections_by_format = course_grade.graded_subsections_by_format
+    category_scores_detail = {}
+
+    # subsection by format (category_grades)
+    for key, values in graded_subsections_by_format.items():
+        # a category_grade can be in more than one subsection
+        for subsection in itervalues(values):
+            subsection_data = {
+                'subsection_display_name'   : subsection.display_name,
+                'url'                       : _get_subsection_url(subsection.location, course_key),
+                'total_earned'              : subsection.graded_total.earned, # only graded scores
+                'total_possible'            : subsection.graded_total.possible, # only graded scores
+                'problem_scores'            : [
+                    {
+                        'earned'            : score.earned,
+                        'possible'          : score.possible
+                    }
+                    for score in subsection.problem_scores.values() if score.graded # only graded scores
+                ]
+            }
+            category_scores_detail.setdefault(subsection.format.upper(),[]).append(subsection_data)
+    return category_scores_detail
+
+
+def _get_subsection_url(location, course_key):
+    """
+        URL Redirect to specific location in the course
+    """
+    return reverse(
+        'jump_to', 
+        kwargs=dict(
+            course_id=text_type(course_key),
+            location=text_type(location)
+        )
+    )
 
 def _get_certificate_data(user, course, enrollment_mode, course_grade):
     """
