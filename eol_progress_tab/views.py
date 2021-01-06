@@ -56,9 +56,12 @@ def get_student_data(request, course_id):
     course = get_course_with_access(request.user, "load", course_key)
 
     grade_cutoff = min(course.grade_cutoffs.values())
-    # Create dict with category weights (% 0. -> 1.)
-    category_weights = {
-        assignment_type.upper() : weight
+    # Create dict with category weights (% 0. -> 1.) and drop_count
+    category_config = {
+        assignment_type.upper() : {
+            'weight'      : weight,
+            'drop_count'  : grader.drop_count
+        }
         for grader, assignment_type, weight in course.grader.subgraders
     }
     # Student grades information
@@ -87,7 +90,8 @@ def get_student_data(request, course_id):
                 'grade_percent' : grade['percent'],
                 'grade_scaled'  : _grade_percent_scaled(grade['percent'], grade_cutoff),
                 'category'      : grade['category'].title(),
-                'weight'        : category_weights[grade['category'].upper()],
+                'weight'        : category_config[grade['category'].upper()]['weight'],
+                'drop_count'    : category_config[grade['category'].upper()]['drop_count'],
                 'detail'        : category_scores_detail[grade['category'].upper()]
             }
             for grade in student_category_grades
