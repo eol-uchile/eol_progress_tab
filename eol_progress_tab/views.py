@@ -229,13 +229,13 @@ def _get_course_dates(course):
     if not course.start_date_is_still_default:
         course_start_date = course.advertised_start or course.start
         if not isinstance(course_start_date, string_types):
-            course_start_date = course_start_date.strftime('%H:%M %d/%m/%Y')
+            course_start_date = course_start_date.strftime('%Y-%m-%dT%H:%M:%S%z')
 
     course_end_date = 'None'
     if course.end:
         course_end_date = course.end
         if not isinstance(course_end_date, string_types):
-            course_end_date = course_end_date.strftime('%H:%M %d/%m/%Y')
+            course_end_date = course_end_date.strftime('%Y-%m-%dT%H:%M:%S%z')
 
     return course_start_date, course_end_date
 
