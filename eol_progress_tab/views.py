@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 class EolProgressTabFragmentView(EdxFragmentView):
     def render_to_fragment(self, request, course_id, **kwargs):
-        logger.warning("RENDER EOL PROGRESS TAB")
         if(not _has_page_access(request, course_id)):
             raise Http404()
 
@@ -161,6 +160,8 @@ def _get_category_scores_detail(course_grade, course_key):
                 'url'                       : _get_subsection_url(subsection.location, course_key),
                 'total_earned'              : subsection.graded_total.earned, # only graded scores
                 'total_possible'            : subsection.graded_total.possible, # only graded scores
+                'due'                       : _format_date(subsection.due),
+                'attempted'                 : subsection.graded_total.first_attempted is not None,
                 'problem_scores'            : [
                     {
                         'earned'            : score.earned,
@@ -225,19 +226,20 @@ def _get_course_dates(course):
     """
         Get course dates string
     """
-    course_start_date = 'None'
+    course_start_date = None
     if not course.start_date_is_still_default:
-        course_start_date = course.advertised_start or course.start
-        if not isinstance(course_start_date, string_types):
-            course_start_date = course_start_date.strftime('%Y-%m-%dT%H:%M:%S%z')
+        course_start_date = _format_date(course.advertised_start or course.start)
 
-    course_end_date = 'None'
+    course_end_date = None
     if course.end:
-        course_end_date = course.end
-        if not isinstance(course_end_date, string_types):
-            course_end_date = course_end_date.strftime('%Y-%m-%dT%H:%M:%S%z')
+        course_end_date = _format_date(course.end)
 
     return course_start_date, course_end_date
+
+def _format_date(date):
+    if not isinstance(date, string_types) and date is not None:
+        date = date.strftime('%Y-%m-%dT%H:%M:%S%z')
+    return date
 
 def _grade_percent_scaled(grade_percent, grade_cutoff):
     """
