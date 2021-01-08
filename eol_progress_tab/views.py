@@ -117,7 +117,7 @@ def get_student_data(request, course_id, user_id):
                 'category'      : grade['category'].title(),
                 'weight'        : category_config[grade['category'].upper()]['weight'],
                 'drop_count'    : category_config[grade['category'].upper()]['drop_count'],
-                'detail'        : category_scores_detail[grade['category'].upper()]
+                'detail'        : category_scores_detail[grade['category'].upper()] if grade['category'].upper() in category_scores_detail else []
             }
             for grade in student_category_grades
         ]
