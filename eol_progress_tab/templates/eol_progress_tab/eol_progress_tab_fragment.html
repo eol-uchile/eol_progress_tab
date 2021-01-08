@@ -50,7 +50,7 @@
             frameborder="0" 
             allowfullscreen="" 
             scrolling="yes" 
-            src="${static.url('eol_progress_tab/index.html')}#/eol/eol_progress_tab/static/${course.id}"
+            src="${static.url('eol_progress_tab/index.html')}#/eol/eol_progress_tab/static/${course.id}/${student_id}"
         ></iframe>
     % else :
         <iframe 
@@ -59,7 +59,7 @@
             frameborder="0" 
             allowfullscreen="" 
             scrolling="yes" 
-            src="${DEV_URL}#/eol/eol_progress_tab/static/${course.id}"
+            src="${DEV_URL}#/eol/eol_progress_tab/static/${course.id}/${student_id}"
         ></iframe>
     % endif 
 </main>

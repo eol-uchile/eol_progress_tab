@@ -21,6 +21,13 @@ from django.contrib.auth.models import User
 from django.http import Http404, HttpResponse
 from django.urls import reverse
 
+from courseware.access import has_access
+from courseware.masquerade import setup_masquerade
+from django.db.models import prefetch_related_objects
+
+from lms.djangoapps.courseware.permissions import MASQUERADE_AS_STUDENT
+
+
 import json
 from bson import json_util
 from six import string_types, itervalues, text_type
@@ -30,29 +37,48 @@ logger = logging.getLogger(__name__)
 
 class EolProgressTabFragmentView(EdxFragmentView):
     def render_to_fragment(self, request, course_id, **kwargs):
-        if(not _has_page_access(request, course_id)):
+        if(not _has_page_access(request.user, course_id)):
             raise Http404()
 
         course_key = CourseKey.from_string(course_id)
         course = get_course_with_access(request.user, "load", course_key)
+
+        # masquerade and student required for preview_menu (admin)
+        staff_access = bool(has_access(request.user, 'staff', course))
+        can_masquerade = request.user.has_perm(MASQUERADE_AS_STUDENT, course)
+        masquerade, student = setup_masquerade(request, course_key, staff_access, reset_masquerade_data=True)
+        prefetch_related_objects([student], 'groups')
+        if request.user.id != student.id:
+            course = get_course_with_access(student, 'load', course_key, check_if_enrolled=True)
+
         context = {
             "course": course,
+            "student_id": student.id,
+            "supports_preview_menu": True,
+            "staff_access": staff_access,
+            "can_masquerade": can_masquerade,
+            "masquerade": masquerade,
             "DEV_URL": configuration_helpers.get_value('EOL_PROGRESS_TAB_DEV_URL', settings.EOL_PROGRESS_TAB_DEV_URL)
         }
         html = render_to_string('eol_progress_tab/eol_progress_tab_fragment.html', context)
         fragment = Fragment(html)
         return fragment
             
-def get_student_data(request, course_id):
+def get_student_data(request, course_id, user_id):
     """
         Get student grades in two formats: percents and scaled (1. -> 7.)
         List of categories with respective weight, grades & problem scores.
     """
-    if(not _has_page_access(request, course_id)):
-        raise Http404()
-
+    user_id = int(user_id)
+    # if 'view course as' is active then user_id could be different than request.user
+    user = request.user if user_id == request.user.id else User.objects.get(pk=user_id)
     course_key = CourseKey.from_string(course_id)
-    course = get_course_with_access(request.user, "load", course_key)
+    course = get_course_with_access(user, "load", course_key)
+
+    # check if user has access. If masquerade view, check if user is staff
+    if( not _has_page_access(request.user, course_id)
+        or (user_id != request.user.id and not bool(has_access(request.user, 'staff', course))) ):
+        raise Http404()
 
     grade_cutoff = min(course.grade_cutoffs.values())
     # Create dict with category weights (% 0. -> 1.) and drop_count
@@ -64,14 +90,14 @@ def get_student_data(request, course_id):
         for grader, assignment_type, weight in course.grader.subgraders
     }
     # Student grades information
-    course_grade = CourseGradeFactory().read(request.user, course)
+    course_grade = CourseGradeFactory().read(user, course)
 
     # Get category detail and problem scores by subsection
     category_scores_detail = _get_category_scores_detail(course_grade, course_key)
 
     # Certificate
-    enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(request.user, course_key)
-    certificate_data = _get_certificate_data(request.user, course, enrollment_mode, course_grade)
+    enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(user, course_key)
+    certificate_data = _get_certificate_data(user, course, enrollment_mode, course_grade)
 
     # Student final grade scaled
     student_grade_scaled = _grade_percent_scaled(course_grade.percent, grade_cutoff)
@@ -79,7 +105,7 @@ def get_student_data(request, course_id):
     student_category_grades = filter(_prominent_section_filter, course_grade.summary['section_breakdown'])
     # Student data summary
     student_data = {
-        'username'              : request.user.username,
+        'username'              : user.username,
         'final_grade_percent'   : course_grade.percent,
         'final_grade_scaled'    : student_grade_scaled,
         'passed'                : course_grade.passed,
@@ -103,7 +129,7 @@ def get_course_info(request, course_id):
     """
         Get course info related to dates and grades
     """
-    if(not _has_page_access(request, course_id)):
+    if(not _has_page_access(request.user, course_id)):
         raise Http404()
     course_key = CourseKey.from_string(course_id)
     course = get_course_with_access(request.user, "load", course_key)
@@ -128,20 +154,20 @@ def get_course_info(request, course_id):
     return HttpResponse(data)
 
 
-def _has_page_access(request, course_id):
+def _has_page_access(user, course_id):
     """
         Check if tab is enabled and user is enrolled
     """ 
     course_key = CourseKey.from_string(course_id)
-    course = get_course_with_access(request.user, "load", course_key)
-    tabs = get_course_tab_list(request.user, course)
+    course = get_course_with_access(user, "load", course_key)
+    tabs = get_course_tab_list(user, course)
     tabs_list = [tab.tab_id for tab in tabs]
     if 'eol_progress_tab' not in tabs_list:
         return False
     return User.objects.filter(
         courseenrollment__course_id=course_key,
         courseenrollment__is_active=1,
-        pk = request.user.id
+        pk = user.id
     ).exists()
 
 def _get_category_scores_detail(course_grade, course_key):
