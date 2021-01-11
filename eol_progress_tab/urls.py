@@ -23,7 +23,7 @@ urlpatterns = (
         name='eol_progress_tab_course_info',
     ),
     url(
-        r'courses/{}/eol_progress_tab/student_data/(?P<user_id>.*)'.format(
+        r'courses/{}/eol_progress_tab/student_data/(?P<user_id>.*)/'.format(
             settings.COURSE_ID_PATTERN,
         ),
         login_required(get_student_data),
