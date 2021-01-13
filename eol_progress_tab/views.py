@@ -31,6 +31,7 @@ from lms.djangoapps.courseware.permissions import MASQUERADE_AS_STUDENT
 import json
 from bson import json_util
 from six import string_types, itervalues, text_type
+from numpy import around
 
 import logging
 logger = logging.getLogger(__name__)
@@ -189,6 +190,7 @@ def _get_category_scores_detail(course_grade, course_key):
                 'url'                       : _get_subsection_url(subsection.location, course_key),
                 'total_earned'              : subsection.graded_total.earned, # only graded scores
                 'total_possible'            : subsection.graded_total.possible, # only graded scores
+                'total_percent'             : around(subsection.graded_total.earned / subsection.graded_total.possible, decimals=2),
                 'due'                       : _format_date(subsection.due),
                 'attempted'                 : subsection.graded_total.first_attempted is not None,
                 'problem_scores'            : [
