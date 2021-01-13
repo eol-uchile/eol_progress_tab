@@ -3,7 +3,7 @@
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from django.conf import settings
 from lms.djangoapps.courseware.tabs import get_course_tab_list
-from lms.djangoapps.courseware.courses import get_course_about_section
+from lms.djangoapps.courseware.courses import get_course_about_section, get_studio_url
 
 # https://github.com/edx/edx-platform/blob/open-release/juniper.master/lms/djangoapps/courseware/views/views.py
 from lms.djangoapps.courseware.views.views import _get_cert_data as get_cert_data 
@@ -58,6 +58,7 @@ class EolProgressTabFragmentView(EdxFragmentView):
             "staff_access": staff_access,
             "can_masquerade": can_masquerade,
             "masquerade": masquerade,
+            'studio_url': get_studio_url(course, 'settings/grading'),
             "DEV_URL": configuration_helpers.get_value('EOL_PROGRESS_TAB_DEV_URL', settings.EOL_PROGRESS_TAB_DEV_URL)
         }
         html = render_to_string('eol_progress_tab/eol_progress_tab_fragment.html', context)
@@ -84,8 +85,9 @@ def get_student_data(request, course_id, user_id):
     # Create dict with category weights (% 0. -> 1.) and drop_count
     category_config = {
         assignment_type.upper() : {
-            'weight'      : weight,
-            'drop_count'  : grader.drop_count
+            'weight'    : weight,
+            'drop_count': grader.drop_count,
+            'min_count' : grader.min_count
         }
         for grader, assignment_type, weight in course.grader.subgraders
     }
@@ -117,6 +119,7 @@ def get_student_data(request, course_id, user_id):
                 'category'      : grade['category'].title(),
                 'weight'        : category_config[grade['category'].upper()]['weight'],
                 'drop_count'    : category_config[grade['category'].upper()]['drop_count'],
+                'min_count'     : category_config[grade['category'].upper()]['min_count'],
                 'detail'        : category_scores_detail[grade['category'].upper()] if grade['category'].upper() in category_scores_detail else []
             }
             for grade in student_category_grades
