@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 
 class EolProgressTab(TabFragmentViewMixin, EnrolledTab):
     type = 'eol_progress_tab'
-    title = ugettext_noop('Progreso EOL')
+    title = ugettext_noop('Calificaciones')
     priority = None
     view_name = 'eol_progress_tab_view'
     fragment_view_name = 'eol_progress_tab.views.EolProgressTabFragmentView'

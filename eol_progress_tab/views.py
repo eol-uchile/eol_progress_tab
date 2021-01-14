@@ -164,10 +164,15 @@ def _has_page_access(user, course_id):
     """ 
     course_key = CourseKey.from_string(course_id)
     course = get_course_with_access(user, "load", course_key)
+
+    if bool(has_access(user, 'staff', course)):
+        return True # Allow page access to staff
+    
     tabs = get_course_tab_list(user, course)
     tabs_list = [tab.tab_id for tab in tabs]
     if 'eol_progress_tab' not in tabs_list:
         return False
+
     return User.objects.filter(
         courseenrollment__course_id=course_key,
         courseenrollment__is_active=1,
