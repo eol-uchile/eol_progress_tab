@@ -21,6 +21,8 @@ from . import views
 import datetime
 from six import text_type
 
+from django.utils import timezone
+from datetime import timedelta
 
 class TestEolProgressTabView(UrlResetMixin, ModuleStoreTestCase):
     def setUp(self):
@@ -243,6 +245,31 @@ class TestEolProgressTabView(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(len(category_scores_detail['HOMEWORK']), 1) # Homework has one section
         self.assertEqual(len(category_scores_detail['HOMEWORK_2']), 2) # Homework_2 has two sections
 
+    def test_show_problem_scores(self):
+        """
+            Test show problem scores using all test cases
+        """
+        show_correctness = 'always'
+        due = None
+        show = views._show_problem_scores(show_correctness, due)
+        self.assertTrue(show)
+
+        show_correctness = 'never'
+        show = views._show_problem_scores(show_correctness, due)
+        self.assertTrue(not show)
+
+        show_correctness = 'past_due'
+        show = views._show_problem_scores(show_correctness, due)
+        self.assertTrue(show)
+
+        due = timezone.now() + timedelta(days=1)
+        show = views._show_problem_scores(show_correctness, due)
+        self.assertTrue(not show)
+
+        due = timezone.now() - timedelta(days=1)
+        show = views._show_problem_scores(show_correctness, due)
+        self.assertTrue(show)
+    
     @patch("eol_progress_tab.views._has_page_access")
     def test_get_course_info(self, has_page_access):
         """

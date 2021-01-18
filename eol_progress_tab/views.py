@@ -32,6 +32,7 @@ import json
 from bson import json_util
 from six import string_types, itervalues, text_type
 from numpy import around
+from django.utils import timezone
 
 import logging
 logger = logging.getLogger(__name__)
@@ -198,6 +199,7 @@ def _get_category_scores_detail(course_grade, course_key):
                 'total_percent'             : around(subsection.graded_total.earned / subsection.graded_total.possible, decimals=2),
                 'due'                       : _format_date(subsection.due),
                 'attempted'                 : subsection.graded_total.first_attempted is not None,
+                'show_problem_scores'       : _show_problem_scores(subsection.show_correctness, subsection.due),
                 'problem_scores'            : [
                     {
                         'earned'            : score.earned,
@@ -209,6 +211,21 @@ def _get_category_scores_detail(course_grade, course_key):
             category_scores_detail.setdefault(subsection.format.upper(),[]).append(subsection_data)
     return category_scores_detail
 
+
+def _show_problem_scores(show_correctness, due):
+    """
+        Show problem scores
+            show_correctness values:
+                'always'
+                'past_due'
+                'never'
+    """
+    if show_correctness == 'always':
+        return True
+    elif show_correctness == 'past_due':
+        return due is None or timezone.now() > due
+    # show_correctness == 'never'
+    return False
 
 def _get_subsection_url(location, course_key):
     """
