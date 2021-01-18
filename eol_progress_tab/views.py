@@ -191,6 +191,7 @@ def _get_category_scores_detail(course_grade, course_key):
     for key, values in graded_subsections_by_format.items():
         # a category_grade can be in more than one subsection
         for subsection in itervalues(values):
+            show_problem_scores_value = _show_problem_scores(subsection.show_correctness, subsection.due)
             subsection_data = {
                 'subsection_display_name'   : subsection.display_name,
                 'url'                       : _get_subsection_url(subsection.location, course_key),
@@ -199,14 +200,14 @@ def _get_category_scores_detail(course_grade, course_key):
                 'total_percent'             : around(subsection.graded_total.earned / subsection.graded_total.possible, decimals=2),
                 'due'                       : _format_date(subsection.due),
                 'attempted'                 : subsection.graded_total.first_attempted is not None,
-                'show_problem_scores'       : _show_problem_scores(subsection.show_correctness, subsection.due),
+                'show_problem_scores'       : show_problem_scores_value,
                 'problem_scores'            : [
                     {
                         'earned'            : score.earned,
                         'possible'          : score.possible
                     }
                     for score in subsection.problem_scores.values() if score.graded # only graded scores
-                ]
+                ] if show_problem_scores_value else []
             }
             category_scores_detail.setdefault(subsection.format.upper(),[]).append(subsection_data)
     return category_scores_detail
