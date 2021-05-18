@@ -126,6 +126,14 @@ class TestEolProgressTabView(UrlResetMixin, ModuleStoreTestCase):
             grade_scaled = views._grade_percent_scaled(tc[0], tc[1])
             self.assertEqual(grade_scaled, tc[2])
 
+    def test_grade_percent_scaled_39(self):
+        """
+            Test scale percent grades. 
+            EDGE CASE: 79% with 80% cutoff -> 4.0 (approved) modified to 3.9 (not approved)
+        """
+        grade_scaled = views._grade_percent_scaled(.79, .8)
+        self.assertEqual(grade_scaled, 3.9)
+
     def test_format_date(self):
         """
             Test format date into correct string

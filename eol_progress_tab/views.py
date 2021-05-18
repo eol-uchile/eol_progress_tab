@@ -301,5 +301,5 @@ def _grade_percent_scaled(grade_percent, grade_cutoff):
     if grade_percent == 0.:
         return 1.
     if grade_percent < grade_cutoff:
-        return round(10. * (3. / grade_cutoff * grade_percent + 1.)) / 10.
+        return min(round(10. * (3. / grade_cutoff * grade_percent + 1.)) / 10., 3.9)
     return round((3. / (1. - grade_cutoff) * grade_percent + (7. - (3. / (1. - grade_cutoff)))) * 10.) / 10.
