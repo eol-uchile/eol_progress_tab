@@ -5,8 +5,7 @@ from django.conf import settings
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.courses import get_course_about_section, get_studio_url
 
-# https://github.com/edx/edx-platform/blob/open-release/juniper.master/lms/djangoapps/courseware/views/views.py
-from lms.djangoapps.courseware.views.views import _get_cert_data as get_cert_data 
+from lms.djangoapps.courseware.views.views import get_cert_data 
 from lms.djangoapps.certificates.models import CertificateStatuses
 
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
