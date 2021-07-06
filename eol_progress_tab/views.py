@@ -9,19 +9,19 @@ from lms.djangoapps.courseware.views.views import get_cert_data
 from lms.djangoapps.certificates.models import CertificateStatuses
 
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
-from student.models import CourseEnrollment
+from common.djangoapps.student.models import CourseEnrollment
 
 from django.template.loader import render_to_string
 from web_fragments.fragment import Fragment
-from courseware.courses import get_course_with_access
+from lms.djangoapps.courseware.courses import get_course_with_access
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from opaque_keys.edx.keys import CourseKey
 from django.contrib.auth.models import User
 from django.http import Http404, HttpResponse
 from django.urls import reverse
 
-from courseware.access import has_access
-from courseware.masquerade import setup_masquerade
+from lms.djangoapps.courseware.access import has_access
+from lms.djangoapps.courseware.masquerade import setup_masquerade
 from django.db.models import prefetch_related_objects
 
 from lms.djangoapps.courseware.permissions import MASQUERADE_AS_STUDENT
