@@ -6,13 +6,13 @@ from mock import patch, Mock
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from util.testing import UrlResetMixin
+from common.djangoapps.util.testing import UrlResetMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
 from capa.tests.response_xml_factory import StringResponseXMLFactory
-from student.tests.factories import UserFactory, CourseEnrollmentFactory
-from student.roles import CourseStaffRole
+from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory
+from common.djangoapps.student.roles import CourseStaffRole
 
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 
@@ -33,7 +33,7 @@ class TestEolProgressTabView(UrlResetMixin, ModuleStoreTestCase):
 
         # Patch the comment client user save method so it does not try
         # to create a new cc user when creating a django user
-        with patch('student.models.cc.User.save'):
+        with patch('common.djangoapps.student.models.cc.User.save'):
             # Create the student
             self.student = UserFactory(username='student', password='test', email='student@edx.org')
             # Enroll the student in the course
