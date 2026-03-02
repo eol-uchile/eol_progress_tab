@@ -1,6 +1,8 @@
 # EOL Progress Tab
 
-![https://github.com/eol-uchile/eol_progress_tab/actions](https://github.com/eol-uchile/eol_progress_tab/workflows/Python%20application/badge.svg)
+![Coverage Status](/coverage-badge.svg)
+
+![https://github.com/eol-uchile/eol_progress_tab/actions](https://github.com/eol-uchile/eol_progress_tab/workflows/Python%20application/badge.svg) 
 
 Student Progress Tab with scaled grades
 
